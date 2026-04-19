@@ -327,7 +327,7 @@ function BookingsAdmin() {
     },
   });
 
-  const setStatus = async (id: string, status: string) => {
+  const setStatus = async (id: string, status: "confirmed" | "completed" | "cancelled" | "pending") => {
     const { error } = await supabase.from("bookings").update({ status }).eq("id", id);
     if (error) toast.error(error.message);
     else {
