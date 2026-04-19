@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as BookingsRouteImport } from './routes/bookings'
 import { Route as AuthRouteImport } from './routes/auth'
+import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as GuesthouseIdRouteImport } from './routes/guesthouse.$id'
 
@@ -22,6 +23,11 @@ const BookingsRoute = BookingsRouteImport.update({
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
   path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminRoute = AdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -37,12 +43,14 @@ const GuesthouseIdRoute = GuesthouseIdRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/admin': typeof AdminRoute
   '/auth': typeof AuthRoute
   '/bookings': typeof BookingsRoute
   '/guesthouse/$id': typeof GuesthouseIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/admin': typeof AdminRoute
   '/auth': typeof AuthRoute
   '/bookings': typeof BookingsRoute
   '/guesthouse/$id': typeof GuesthouseIdRoute
@@ -50,20 +58,22 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/admin': typeof AdminRoute
   '/auth': typeof AuthRoute
   '/bookings': typeof BookingsRoute
   '/guesthouse/$id': typeof GuesthouseIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/auth' | '/bookings' | '/guesthouse/$id'
+  fullPaths: '/' | '/admin' | '/auth' | '/bookings' | '/guesthouse/$id'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/auth' | '/bookings' | '/guesthouse/$id'
-  id: '__root__' | '/' | '/auth' | '/bookings' | '/guesthouse/$id'
+  to: '/' | '/admin' | '/auth' | '/bookings' | '/guesthouse/$id'
+  id: '__root__' | '/' | '/admin' | '/auth' | '/bookings' | '/guesthouse/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AdminRoute: typeof AdminRoute
   AuthRoute: typeof AuthRoute
   BookingsRoute: typeof BookingsRoute
   GuesthouseIdRoute: typeof GuesthouseIdRoute
@@ -85,6 +95,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin': {
+      id: '/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AdminRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -104,6 +121,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AdminRoute: AdminRoute,
   AuthRoute: AuthRoute,
   BookingsRoute: BookingsRoute,
   GuesthouseIdRoute: GuesthouseIdRoute,
