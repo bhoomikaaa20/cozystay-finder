@@ -1,6 +1,5 @@
 import { createFileRoute, useNavigate, Link, useSearch } from "@tanstack/react-router";
 import { useState, type FormEvent } from "react";
-import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -33,35 +32,50 @@ function AuthPage() {
     e.preventDefault();
     const data = new FormData(e.currentTarget);
     setBusy(true);
-    const { error } = await supabase.auth.signInWithPassword({
-      email: String(data.get("email")),
-      password: String(data.get("password")),
+
+    const res = await fetch("http://localhost:5000/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({
+        email: data.get("email"),
+        password: data.get("password"),
+      }),
     });
+
     setBusy(false);
-    if (error) {
-      toast.error(error.message);
+
+    if (!res.ok) {
+      const err = await res.json();
+      toast.error(err.message);
       return;
     }
+
     toast.success("Welcome back");
   };
-
   const handleSignUp = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const data = new FormData(e.currentTarget);
     setBusy(true);
-    const { error } = await supabase.auth.signUp({
-      email: String(data.get("email")),
-      password: String(data.get("password")),
-      options: {
-        emailRedirectTo: `${window.location.origin}/`,
-        data: { full_name: String(data.get("full_name") || "") },
-      },
+
+    const res = await fetch("http://localhost:5000/auth/signup", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        full_name: data.get("full_name"),
+        email: data.get("email"),
+        password: data.get("password"),
+      }),
     });
+
     setBusy(false);
-    if (error) {
-      toast.error(error.message);
+
+    if (!res.ok) {
+      const err = await res.json();
+      toast.error(err.message);
       return;
     }
+
     toast.success("Account created — you're in!");
   };
 

@@ -2,7 +2,12 @@ import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import cookieParser from "cookie-parser";
+
 import connectDB from "./config/db";
+import authRoutes from "./routes/authRoutes";
+import bookingRoutes from "./routes/bookingRoutes";
+import publicRoutes from "./routes/publicRoutes";
+import adminRoutes from "./routes/adminRoutes";
 
 dotenv.config();
 connectDB();
@@ -10,16 +15,17 @@ connectDB();
 const app = express();
 
 app.use(cors({
-    origin: "http://localhost:5173",
-    credentials: true
+    origin: "http://localhost:8080", // your frontend port
+    credentials: true,
 }));
 
 app.use(express.json());
 app.use(cookieParser());
 
-// Routes
-app.use("/auth", require("./routes/authRoutes"));
-app.use("/rooms", require("./routes/roomRoutes"));
-app.use("/bookings", require("./routes/bookingRoutes"));
+// ✅ Routes (FIXED)
+app.use("/auth", authRoutes);
+app.use("/bookings", bookingRoutes);
+app.use("/", publicRoutes);
+app.use("/admin", adminRoutes);
 
 app.listen(5000, () => console.log("Server running on port 5000"));

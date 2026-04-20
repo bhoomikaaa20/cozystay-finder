@@ -2,7 +2,6 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState, type FormEvent } from "react";
 import { format } from "date-fns";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,7 +12,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
-import { Plus, Trash2, Upload } from "lucide-react";
+import { Plus, Trash2 } from "lucide-react";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter
 } from "@/components/ui/dialog";
@@ -21,6 +20,10 @@ import {
 export const Route = createFileRoute("/admin")({
   component: AdminPage,
 });
+
+const API = "http://localhost:5000/admin";
+
+/* ================= MAIN ================= */
 
 function AdminPage() {
   const { user, isAdmin, loading } = useAuth();
@@ -30,26 +33,27 @@ function AdminPage() {
     if (loading) return;
     if (!user) navigate({ to: "/auth", search: { redirect: "/admin" } });
     else if (!isAdmin) navigate({ to: "/" });
-  }, [user, isAdmin, loading, navigate]);
+  }, [user, isAdmin, loading]);
 
   if (loading || !user || !isAdmin) {
-    return <div className="mx-auto max-w-7xl px-4 py-12 text-muted-foreground">Loading…</div>;
+    return <div className="p-10">Loading...</div>;
   }
 
   return (
-    <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-12">
-      <h1 className="font-display text-4xl font-semibold">Admin</h1>
-      <p className="text-muted-foreground mt-1">Manage stays, rooms, and bookings.</p>
+    <div className="p-6 max-w-6xl mx-auto">
+      <h1 className="text-3xl font-bold">Admin Panel</h1>
 
-      <Tabs defaultValue="guesthouses" className="mt-8">
+      <Tabs defaultValue="guesthouses" className="mt-6">
         <TabsList>
-          <TabsTrigger value="guesthouses">Guest houses</TabsTrigger>
-          <TabsTrigger value="bookings">All bookings</TabsTrigger>
+          <TabsTrigger value="guesthouses">Guesthouses</TabsTrigger>
+          <TabsTrigger value="bookings">Bookings</TabsTrigger>
         </TabsList>
-        <TabsContent value="guesthouses" className="mt-6">
+
+        <TabsContent value="guesthouses">
           <GuesthousesAdmin />
         </TabsContent>
-        <TabsContent value="bookings" className="mt-6">
+
+        <TabsContent value="bookings">
           <BookingsAdmin />
         </TabsContent>
       </Tabs>
@@ -57,159 +61,96 @@ function AdminPage() {
   );
 }
 
-/* ---------- GUESTHOUSES ---------- */
-
-type Guesthouse = {
-  id: string; name: string; location: string; description: string | null;
-  cover_image: string | null; price_from: number;
-};
+/* ================= GUESTHOUSES ================= */
 
 function GuesthousesAdmin() {
   const qc = useQueryClient();
-  const { data: guesthouses = [], isLoading } = useQuery({
+
+  const { data: guesthouses = [] } = useQuery({
     queryKey: ["admin-guesthouses"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("guesthouses")
-        .select("*")
-        .order("created_at", { ascending: false });
-      if (error) throw error;
-      return data as Guesthouse[];
+      const res = await fetch(`${API}/guesthouses`, { credentials: "include" });
+      return res.json();
     },
   });
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Delete this guest house and all its rooms?")) return;
-    const { error } = await supabase.from("guesthouses").delete().eq("id", id);
-    if (error) toast.error(error.message);
-    else {
-      toast.success("Deleted");
-      qc.invalidateQueries({ queryKey: ["admin-guesthouses"] });
-      qc.invalidateQueries({ queryKey: ["guesthouses"] });
-    }
+    await fetch(`${API}/guesthouses/${id}`, {
+      method: "DELETE",
+      credentials: "include",
+    });
+
+    toast.success("Deleted");
+    qc.invalidateQueries({ queryKey: ["admin-guesthouses"] });
   };
 
   return (
     <div>
-      <div className="flex justify-end mb-4">
-        <AddGuesthouseDialog onAdded={() => {
-          qc.invalidateQueries({ queryKey: ["admin-guesthouses"] });
-          qc.invalidateQueries({ queryKey: ["guesthouses"] });
-        }} />
-      </div>
+      <AddGuesthouseDialog onAdded={() => qc.invalidateQueries({ queryKey: ["admin-guesthouses"] })} />
 
-      {isLoading ? (
-        <p className="text-muted-foreground">Loading…</p>
-      ) : guesthouses.length === 0 ? (
-        <Card><CardContent className="p-8 text-center text-muted-foreground">No guest houses yet.</CardContent></Card>
-      ) : (
-        <div className="space-y-4">
-          {guesthouses.map((g) => (
-            <Card key={g.id} className="shadow-soft">
-              <CardHeader className="flex-row items-center gap-4 space-y-0">
-                <div className="h-16 w-24 rounded-lg overflow-hidden bg-muted shrink-0">
-                  {g.cover_image && <img src={g.cover_image} alt={g.name} className="h-full w-full object-cover" />}
-                </div>
-                <div className="flex-1">
-                  <CardTitle className="font-display">{g.name}</CardTitle>
-                  <p className="text-sm text-muted-foreground">{g.location}</p>
-                </div>
-                <div className="flex gap-2">
-                  <Button asChild variant="outline" size="sm">
-                    <Link to="/guesthouse/$id" params={{ id: g.id }}>View</Link>
-                  </Button>
-                  <Button variant="ghost" size="icon" onClick={() => handleDelete(g.id)}>
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <RoomsManager guesthouseId={g.id} />
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      )}
+      {guesthouses.map((g: any) => (
+        <Card key={g._id} className="mt-4">
+          <CardHeader className="flex justify-between">
+            <CardTitle>{g.name}</CardTitle>
+            <Button variant="ghost" onClick={() => handleDelete(g._id)}>
+              <Trash2 size={16} />
+            </Button>
+          </CardHeader>
+
+          <CardContent>
+            <RoomsManager guesthouseId={g._id} />
+          </CardContent>
+        </Card>
+      ))}
     </div>
   );
 }
 
+/* ================= ADD GUESTHOUSE ================= */
+
 function AddGuesthouseDialog({ onAdded }: { onAdded: () => void }) {
   const [open, setOpen] = useState(false);
-  const [busy, setBusy] = useState(false);
-  const [coverPreview, setCoverPreview] = useState<string | null>(null);
-  const [coverFile, setCoverFile] = useState<File | null>(null);
-
-  const onFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const f = e.target.files?.[0];
-    if (!f) return;
-    setCoverFile(f);
-    setCoverPreview(URL.createObjectURL(f));
-  };
 
   const submit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setBusy(true);
     const fd = new FormData(e.currentTarget);
-    let coverUrl: string | null = null;
 
-    if (coverFile) {
-      const path = `${crypto.randomUUID()}-${coverFile.name}`;
-      const { error: upErr } = await supabase.storage.from("guesthouse-images").upload(path, coverFile);
-      if (upErr) {
-        setBusy(false);
-        toast.error(upErr.message);
-        return;
-      }
-      coverUrl = supabase.storage.from("guesthouse-images").getPublicUrl(path).data.publicUrl;
-    }
-
-    const { error } = await supabase.from("guesthouses").insert({
-      name: String(fd.get("name")),
-      location: String(fd.get("location")),
-      description: String(fd.get("description") || "") || null,
-      price_from: Number(fd.get("price_from") || 0),
-      cover_image: coverUrl,
+    await fetch(`${API}/guesthouses`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({
+        name: fd.get("name"),
+        location: fd.get("location"),
+        description: fd.get("description"),
+        price_from: Number(fd.get("price_from")),
+      }),
     });
-    setBusy(false);
-    if (error) {
-      toast.error(error.message);
-      return;
-    }
-    toast.success("Guest house added");
+
+    toast.success("Added");
     setOpen(false);
-    setCoverFile(null);
-    setCoverPreview(null);
     onAdded();
   };
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button className="gap-2"><Plus className="h-4 w-4" /> Add guest house</Button>
+        <Button className="mb-4"><Plus size={14} /> Add Guesthouse</Button>
       </DialogTrigger>
-      <DialogContent className="max-w-lg">
+
+      <DialogContent>
         <DialogHeader>
-          <DialogTitle className="font-display">New guest house</DialogTitle>
+          <DialogTitle>Add Guesthouse</DialogTitle>
         </DialogHeader>
-        <form onSubmit={submit} className="space-y-4">
-          <div><Label>Name</Label><Input name="name" required /></div>
-          <div><Label>Location</Label><Input name="location" required placeholder="e.g. Tuscany, Italy" /></div>
-          <div><Label>Description</Label><Textarea name="description" rows={3} /></div>
-          <div><Label>Price from ($/night)</Label><Input type="number" name="price_from" required min="0" step="0.01" /></div>
-          <div>
-            <Label>Cover image</Label>
-            <div className="mt-1 flex items-center gap-3">
-              <label className="inline-flex items-center gap-2 rounded-md border border-input px-3 py-2 text-sm cursor-pointer hover:bg-secondary">
-                <Upload className="h-4 w-4" />
-                <span>Choose file</span>
-                <input type="file" accept="image/*" onChange={onFileChange} className="hidden" />
-              </label>
-              {coverPreview && <img src={coverPreview} alt="" className="h-12 w-16 object-cover rounded" />}
-            </div>
-          </div>
+
+        <form onSubmit={submit} className="space-y-3">
+          <Input name="name" placeholder="Name" required />
+          <Input name="location" placeholder="Location" required />
+          <Textarea name="description" placeholder="Description" />
+          <Input name="price_from" type="number" placeholder="Price" required />
+
           <DialogFooter>
-            <Button type="submit" disabled={busy}>{busy ? "Saving…" : "Save"}</Button>
+            <Button type="submit">Save</Button>
           </DialogFooter>
         </form>
       </DialogContent>
@@ -217,145 +158,119 @@ function AddGuesthouseDialog({ onAdded }: { onAdded: () => void }) {
   );
 }
 
-/* ---------- ROOMS ---------- */
-
-type Room = {
-  id: string; name: string; room_type: string; description: string | null;
-  price_per_night: number; capacity: number; is_available: boolean;
-};
+/* ================= ROOMS ================= */
 
 function RoomsManager({ guesthouseId }: { guesthouseId: string }) {
   const qc = useQueryClient();
+
   const { data: rooms = [] } = useQuery({
-    queryKey: ["admin-rooms", guesthouseId],
+    queryKey: ["rooms", guesthouseId],
     queryFn: async () => {
-      const { data, error } = await supabase.from("rooms").select("*").eq("guesthouse_id", guesthouseId);
-      if (error) throw error;
-      return data as Room[];
+      const res = await fetch(`${API}/rooms/${guesthouseId}`, { credentials: "include" });
+      return res.json();
     },
   });
 
-  const toggleAvail = async (room: Room) => {
-    const { error } = await supabase.from("rooms").update({ is_available: !room.is_available }).eq("id", room.id);
-    if (error) toast.error(error.message);
-    else qc.invalidateQueries({ queryKey: ["admin-rooms", guesthouseId] });
+  const toggle = async (id: string) => {
+    await fetch(`${API}/rooms/${id}`, {
+      method: "PATCH",
+      credentials: "include",
+    });
+    qc.invalidateQueries({ queryKey: ["rooms", guesthouseId] });
   };
 
-  const removeRoom = async (id: string) => {
-    if (!confirm("Delete this room?")) return;
-    const { error } = await supabase.from("rooms").delete().eq("id", id);
-    if (error) toast.error(error.message);
-    else qc.invalidateQueries({ queryKey: ["admin-rooms", guesthouseId] });
+  const remove = async (id: string) => {
+    await fetch(`${API}/rooms/${id}`, {
+      method: "DELETE",
+      credentials: "include",
+    });
+    qc.invalidateQueries({ queryKey: ["rooms", guesthouseId] });
   };
 
   const addRoom = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const fd = new FormData(e.currentTarget);
-    const { error } = await supabase.from("rooms").insert({
-      guesthouse_id: guesthouseId,
-      name: String(fd.get("name")),
-      room_type: String(fd.get("room_type")),
-      description: String(fd.get("description") || "") || null,
-      price_per_night: Number(fd.get("price_per_night")),
-      capacity: Number(fd.get("capacity") || 2),
+
+    await fetch(`${API}/rooms`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({
+        guesthouse_id: guesthouseId,
+        name: fd.get("name"),
+        room_type: fd.get("room_type"),
+        price_per_night: Number(fd.get("price")),
+        capacity: Number(fd.get("capacity")),
+      }),
     });
-    if (error) {
-      toast.error(error.message);
-      return;
-    }
+
     (e.target as HTMLFormElement).reset();
-    toast.success("Room added");
-    qc.invalidateQueries({ queryKey: ["admin-rooms", guesthouseId] });
+    qc.invalidateQueries({ queryKey: ["rooms", guesthouseId] });
   };
 
   return (
-    <div className="border-t pt-4">
-      <h4 className="font-medium mb-3">Rooms</h4>
-      {rooms.length === 0 ? (
-        <p className="text-sm text-muted-foreground mb-3">No rooms yet.</p>
-      ) : (
-        <div className="space-y-2 mb-4">
-          {rooms.map((r) => (
-            <div key={r.id} className="flex items-center gap-3 rounded-lg border p-3">
-              <div className="flex-1">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="font-medium">{r.name}</span>
-                  <Badge variant="secondary">{r.room_type}</Badge>
-                  <span className="text-sm text-muted-foreground">${Number(r.price_per_night).toFixed(0)}/night · {r.capacity} guests</span>
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <Switch checked={r.is_available} onCheckedChange={() => toggleAvail(r)} />
-                <span className="text-xs text-muted-foreground hidden sm:inline">{r.is_available ? "Available" : "Off"}</span>
-                <Button variant="ghost" size="icon" onClick={() => removeRoom(r.id)}><Trash2 className="h-4 w-4" /></Button>
-              </div>
-            </div>
-          ))}
+    <div>
+      {rooms.map((r: any) => (
+        <div key={r._id} className="flex gap-2 items-center mt-2">
+          <span>{r.name}</span>
+          <Switch checked={r.is_available} onCheckedChange={() => toggle(r._id)} />
+          <Button size="sm" onClick={() => remove(r._id)}>Delete</Button>
         </div>
-      )}
+      ))}
 
-      <form onSubmit={addRoom} className="grid sm:grid-cols-[1fr_1fr_120px_100px_auto] gap-2 items-end">
-        <div><Label className="text-xs">Name</Label><Input name="name" required placeholder="Garden Suite" /></div>
-        <div><Label className="text-xs">Type</Label><Input name="room_type" required placeholder="Suite" /></div>
-        <div><Label className="text-xs">$/night</Label><Input name="price_per_night" type="number" required min="0" step="0.01" /></div>
-        <div><Label className="text-xs">Sleeps</Label><Input name="capacity" type="number" defaultValue={2} min="1" /></div>
-        <Button type="submit" size="sm" className="gap-1"><Plus className="h-3 w-3" />Add</Button>
-        <Input name="description" placeholder="Description (optional)" className="sm:col-span-5" />
+      <form onSubmit={addRoom} className="flex gap-2 mt-3">
+        <Input name="name" placeholder="Room name" required />
+        <Input name="room_type" placeholder="Type" required />
+        <Input name="price" type="number" placeholder="Price" required />
+        <Input name="capacity" type="number" placeholder="Capacity" required />
+        <Button type="submit">Add</Button>
       </form>
     </div>
   );
 }
 
-/* ---------- BOOKINGS ---------- */
-
-type AdminBooking = {
-  id: string; check_in: string; check_out: string; total_price: number; status: string; user_id: string;
-  rooms: { name: string; guesthouses: { name: string } | null } | null;
-};
+/* ================= BOOKINGS ================= */
 
 function BookingsAdmin() {
   const qc = useQueryClient();
-  const { data: bookings = [], isLoading } = useQuery({
-    queryKey: ["admin-bookings"],
+
+  const { data: bookings = [] } = useQuery({
+    queryKey: ["bookings"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("bookings")
-        .select("id,check_in,check_out,total_price,status,user_id,rooms(name,guesthouses(name))")
-        .order("check_in", { ascending: false });
-      if (error) throw error;
-      return (data || []) as unknown as AdminBooking[];
+      const res = await fetch(`${API}/bookings`, { credentials: "include" });
+      return res.json();
     },
   });
 
-  const setStatus = async (id: string, status: "confirmed" | "completed" | "cancelled" | "pending") => {
-    const { error } = await supabase.from("bookings").update({ status }).eq("id", id);
-    if (error) toast.error(error.message);
-    else {
-      toast.success("Updated");
-      qc.invalidateQueries({ queryKey: ["admin-bookings"] });
-    }
+  const updateStatus = async (id: string, status: string) => {
+    await fetch(`${API}/bookings/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ status }),
+    });
+
+    qc.invalidateQueries({ queryKey: ["bookings"] });
   };
 
-  if (isLoading) return <p className="text-muted-foreground">Loading…</p>;
-  if (bookings.length === 0) return <Card><CardContent className="p-8 text-center text-muted-foreground">No bookings yet.</CardContent></Card>;
-
   return (
-    <div className="space-y-2">
-      {bookings.map((b) => (
-        <Card key={b.id} className="shadow-soft">
-          <CardContent className="p-4 flex items-center gap-4 flex-wrap">
-            <div className="flex-1 min-w-[200px]">
-              <div className="font-display font-semibold">{b.rooms?.guesthouses?.name || "—"}</div>
-              <div className="text-sm text-muted-foreground">{b.rooms?.name} · {format(new Date(b.check_in), "MMM d")} → {format(new Date(b.check_out), "MMM d")}</div>
+    <div>
+      {bookings.map((b: any) => (
+        <Card key={b._id} className="mt-3 p-3 flex justify-between">
+          <div>
+            <p>{b.room_id?.guesthouse_id?.name}</p>
+            <p>{b.room_id?.name}</p>
+            <p>{format(new Date(b.check_in), "MMM d")} → {format(new Date(b.check_out), "MMM d")}</p>
+          </div>
+
+          <div>
+            <Badge>{b.status}</Badge>
+            <div className="flex gap-2 mt-2">
+              <Button size="sm" onClick={() => updateStatus(b._id, "confirmed")}>Confirm</Button>
+              <Button size="sm" onClick={() => updateStatus(b._id, "completed")}>Done</Button>
+              <Button size="sm" onClick={() => updateStatus(b._id, "cancelled")}>Cancel</Button>
             </div>
-            <div className="font-display font-semibold text-primary">${Number(b.total_price).toFixed(2)}</div>
-            <Badge variant={b.status === "cancelled" ? "destructive" : "secondary"}>{b.status}</Badge>
-            <div className="flex gap-1">
-              <Button size="sm" variant="outline" onClick={() => setStatus(b.id, "confirmed")}>Confirm</Button>
-              <Button size="sm" variant="outline" onClick={() => setStatus(b.id, "completed")}>Complete</Button>
-              <Button size="sm" variant="outline" onClick={() => setStatus(b.id, "cancelled")}>Cancel</Button>
-            </div>
-          </CardContent>
+          </div>
         </Card>
       ))}
     </div>
