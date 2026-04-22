@@ -13,7 +13,7 @@ export function SiteHeader() {
           <div className="flex h-9 w-9 items-center justify-center rounded-full gradient-warm shadow-warm transition-smooth group-hover:scale-105">
             <Sparkles className="h-4 w-4 text-primary-foreground" />
           </div>
-          <span className="font-display text-xl font-semibold tracking-tight">Casalume</span>
+          <span className="font-display text-xl font-semibold tracking-tight">GuestHub</span>
         </Link>
 
         <nav className="flex items-center gap-1 sm:gap-2">
@@ -22,7 +22,7 @@ export function SiteHeader() {
           </Button>
           {user && (
             <Button asChild variant="ghost" size="sm">
-              <Link to="/bookings">My trips</Link>
+              <Link to="/bookings">My Bookings</Link>
             </Button>
           )}
           {isAdmin && (

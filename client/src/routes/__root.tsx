@@ -33,9 +33,9 @@ export const Route = createRootRoute({
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Casalume — Boutique guest houses, beautifully booked" },
+      { title: "GuestHub — Boutique guest houses, beautifully booked" },
       { name: "description", content: "Discover and book characterful guest houses around the world. Real-time availability, instant confirmation." },
-      { property: "og:title", content: "Casalume — Boutique guest house bookings" },
+      { property: "og:title", content: "GuestHub — Boutique guest house bookings" },
       { property: "og:description", content: "Discover and book characterful guest houses around the world." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },

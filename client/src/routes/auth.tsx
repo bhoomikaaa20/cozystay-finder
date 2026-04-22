@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { useAuth } from "@/hooks/use-auth";
 import { useEffect } from "react";
 
+
 export const Route = createFileRoute("/auth")({
   validateSearch: (s: Record<string, unknown>) => ({
     redirect: typeof s.redirect === "string" ? s.redirect : "/",
@@ -21,12 +22,16 @@ function AuthPage() {
   const { user, loading } = useAuth();
   const search = useSearch({ from: "/auth" });
   const [busy, setBusy] = useState(false);
-
+  const { refreshUser } = useAuth();
   useEffect(() => {
     if (!loading && user) {
-      navigate({ to: search.redirect, replace: true });
+      navigate({
+        to: "/",
+      });
     }
-  }, [user, loading, navigate, search.redirect]);
+  }, [user, loading]);
+
+
 
   const handleSignIn = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -51,7 +56,10 @@ function AuthPage() {
       return;
     }
 
-    toast.success("Welcome back");
+    toast.success("Welcome!");
+
+    // ✅ simplest & reliable
+    window.location.href = "/";
   };
   const handleSignUp = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -76,7 +84,10 @@ function AuthPage() {
       return;
     }
 
-    toast.success("Account created — you're in!");
+    toast.success("Account created! Please login.");
+
+    // ✅ refresh page
+    window.location.href = "/auth";
   };
 
   return (
