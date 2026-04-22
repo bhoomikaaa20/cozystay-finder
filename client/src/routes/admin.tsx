@@ -276,9 +276,9 @@ function BookingsAdmin() {
           <div>
             <Badge>{b.status}</Badge>
             <div className="flex gap-2 mt-2">
-              <Button size="sm" onClick={() => updateStatus(b._id, "confirmed")}>Confirm</Button>
-              <Button size="sm" onClick={() => updateStatus(b._id, "completed")}>Done</Button>
-              <Button size="sm" onClick={() => updateStatus(b._id, "cancelled")}>Cancel</Button>
+              <Button size="sm" onClick={() => updateStatus(b.id, "confirmed")}>Confirm</Button>
+              <Button size="sm" onClick={() => updateStatus(b.id, "completed")}>Done</Button>
+              <Button size="sm" onClick={() => updateStatus(b.id, "cancelled")}>Cancel</Button>
             </div>
           </div>
         </Card>
