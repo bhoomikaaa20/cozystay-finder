@@ -7,8 +7,21 @@ export const getGuesthouses = async (_req: Request, res: Response) => {
 };
 
 export const createGuesthouse = async (req: Request, res: Response) => {
-    const guesthouse = await Guesthouse.create(req.body);
-    res.json(guesthouse);
+    try {
+        const { name, location, description, price_from, cover_image } = req.body;
+
+        const gh = await Guesthouse.create({
+            name,
+            location,
+            description,
+            price_from,
+            cover_image, // ✅ store image
+        });
+
+        res.json(gh);
+    } catch (err) {
+        res.status(500).json({ message: "Error creating guesthouse" });
+    }
 };
 
 export const deleteGuesthouse = async (req: Request, res: Response) => {

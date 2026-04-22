@@ -8,12 +8,14 @@ export interface IGuesthouse extends Document {
     price_from: number;
 }
 
-const guesthouseSchema = new Schema({
-    name: { type: String, required: true },
-    location: { type: String, required: true },
+const guesthouseSchema = new mongoose.Schema({
+    name: String,
+    location: String,
     description: String,
-    cover_image: String,
-    price_from: { type: Number, required: true },
+    price_from: Number,
+
+    cover_image: { type: String, required: true }, // ✅ ADD THIS
+
 }, { timestamps: true });
 
 export default mongoose.model<IGuesthouse>("Guesthouse", guesthouseSchema);

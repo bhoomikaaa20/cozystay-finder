@@ -124,6 +124,7 @@ function AddGuesthouseDialog({ onAdded }: { onAdded: () => void }) {
         location: fd.get("location"),
         description: fd.get("description"),
         price_from: Number(fd.get("price_from")),
+        cover_image: fd.get("cover_image"), // ✅ NEW
       }),
     });
 
@@ -144,8 +145,17 @@ function AddGuesthouseDialog({ onAdded }: { onAdded: () => void }) {
         </DialogHeader>
 
         <form onSubmit={submit} className="space-y-3">
+
           <Input name="name" placeholder="Name" required />
           <Input name="location" placeholder="Location" required />
+
+          {/* ✅ NEW IMAGE FIELD */}
+          <Input
+            name="cover_image"
+            placeholder="Image URL (paste link)"
+            required
+          />
+
           <Textarea name="description" placeholder="Description" />
           <Input name="price_from" type="number" placeholder="Price" required />
 
