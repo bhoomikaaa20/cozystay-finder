@@ -262,26 +262,49 @@ function BookingsAdmin() {
 
     qc.invalidateQueries({ queryKey: ["bookings"] });
   };
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "confirmed":
+        return "bg-green-100 text-green-700";
+      case "completed":
+        return "bg-blue-100 text-blue-700";
+      case "cancelled":
+        return "bg-red-100 text-red-700";
+      default:
+        return "bg-yellow-100 text-yellow-700"; // pending
+    }
+  };
 
   return (
     <div>
       {bookings.map((b: any) => (
-        <Card key={b._id} className="mt-3 p-3 flex justify-between">
-          <div>
-            <p>{b.room_id?.guesthouse_id?.name}</p>
-            <p>{b.room_id?.name}</p>
-            <p>{format(new Date(b.check_in), "MMM d")} → {format(new Date(b.check_out), "MMM d")}</p>
-          </div>
+        <div key={b.id} className="border rounded-xl p-4 flex justify-between items-center">
 
           <div>
-            <Badge>{b.status}</Badge>
-            <div className="flex gap-2 mt-2">
-              <Button size="sm" onClick={() => updateStatus(b.id, "confirmed")}>Confirm</Button>
-              <Button size="sm" onClick={() => updateStatus(b.id, "completed")}>Done</Button>
-              <Button size="sm" onClick={() => updateStatus(b.id, "cancelled")}>Cancel</Button>
-            </div>
+
+            {/* ✅ USER INFO (ADD THIS) */}
+            <p className="font-medium">{b.user?.name || "Unknown User"}</p>
+            <p className="text-xs text-muted-foreground">{b.user?.email}</p>
+
+            {/* EXISTING */}
+            <p className="text-sm mt-1">
+              {format(new Date(b.check_in), "MMM d")} →{" "}
+              {format(new Date(b.check_out), "MMM d")}
+            </p>
+
           </div>
-        </Card>
+
+          <div className="flex gap-2 items-center">
+            <Badge className={getStatusColor(b.status)}>
+              {b.status}
+            </Badge>
+
+            <Button onClick={() => updateStatus(b.id, "confirmed")}>Confirm</Button>
+            <Button onClick={() => updateStatus(b.id, "completed")}>Done</Button>
+            <Button onClick={() => updateStatus(b.id, "cancelled")}>Cancel</Button>
+          </div>
+
+        </div>
       ))}
     </div>
   );

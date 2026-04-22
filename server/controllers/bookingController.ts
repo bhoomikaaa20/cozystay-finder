@@ -9,6 +9,7 @@ export const getBookings = async (req: any, res: Response) => {
                 path: "guesthouse_id",
             },
         })
+        .populate("user_id") // ✅ ADD THIS
         .sort({ check_in: -1 });
 
     // ✅ Transform response to match frontend EXACTLY
@@ -19,6 +20,15 @@ export const getBookings = async (req: any, res: Response) => {
         total_price: b.total_price,
         status: b.status,
         created_at: b.createdAt,
+
+        // ✅ USER DATA
+        user: b.user_id
+            ? {
+                name: b.user_id.full_name,
+                email: b.user_id.email,
+            }
+            : null,
+
         rooms: b.room_id
             ? {
                 name: b.room_id.name,
@@ -34,7 +44,6 @@ export const getBookings = async (req: any, res: Response) => {
             }
             : null,
     }));
-
     res.json(formatted);
 };
 export const updateBookingStatus = async (req: any, res: Response) => {
