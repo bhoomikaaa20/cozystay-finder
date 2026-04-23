@@ -2,7 +2,7 @@ import { Request, Response } from "express";
 import Booking from "../models/Booking";
 
 export const getBookings = async (req: any, res: Response) => {
-    const bookings = await Booking.find({ user_id: req.user.id }) // ✅ only user's bookings
+    const bookings = await Booking.find({}) // ✅ only user's bookings
         .populate({
             path: "room_id",
             populate: {
